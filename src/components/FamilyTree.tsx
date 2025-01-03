@@ -1,33 +1,14 @@
 import { useState, useEffect } from "react";
-import { FamilyMember, FamilyRelations } from "@/types/family";
-import { SearchBar } from "./SearchBar";
-import { FamilyCard } from "./FamilyCard";
-import { AddFamilyMember } from "./AddFamilyMember";
+import { FamilyMember } from "@/types/family";
+import { FamilyTreeHeader } from "./FamilyTreeHeader";
+import { FamilyMembersList } from "./FamilyMembersList";
+import { useFamilyData } from "@/hooks/useFamilyData";
 import { useToast } from "@/components/ui/use-toast";
 
-const STORAGE_KEY = "familyTreeData";
-
-interface FamilyData {
-  members: FamilyMember[];
-  relations: Record<string, {
-    spouses: string[];
-    children: string[];
-    parents: string[];
-    siblings: string[];
-  }>;
-}
-
 export const FamilyTree = () => {
-  const [familyData, setFamilyData] = useState<FamilyData>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : { members: [], relations: {} };
-  });
+  const { familyData, handleAddMember, handleAddRelation, getRelations } = useFamilyData();
   const [searchResults, setSearchResults] = useState<FamilyMember[]>([]);
   const { toast } = useToast();
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(familyData));
-  }, [familyData]);
 
   const handleSearch = (query: string) => {
     if (!query) {
@@ -43,117 +24,20 @@ export const FamilyTree = () => {
     setSearchResults(results);
   };
 
-  const handleAddMember = (newMember: FamilyMember) => {
-    setFamilyData((prev) => ({
-      ...prev,
-      members: [...prev.members, newMember],
-      relations: {
-        ...prev.relations,
-        [newMember.id]: {
-          spouses: [],
-          children: [],
-          parents: [],
-          siblings: [],
-        },
-      },
-    }));
-    setSearchResults((prev) => [...prev, newMember]);
+  const handleAddNewMember = (member: FamilyMember) => {
+    handleAddMember(member);
+    toast({
+      title: "הצלחה",
+      description: "בן המשפחה נוסף בהצלחה",
+    });
   };
 
-  const handleAddRelation = (member: FamilyMember, relation: string, relatedMember: FamilyMember) => {
-    setFamilyData((prev) => {
-      const newRelations = { ...prev.relations };
-      
-      // Initialize relations objects if they don't exist
-      if (!newRelations[member.id]) {
-        newRelations[member.id] = {
-          spouses: [],
-          children: [],
-          parents: [],
-          siblings: [],
-        };
-      }
-      
-      if (!newRelations[relatedMember.id]) {
-        newRelations[relatedMember.id] = {
-          spouses: [],
-          children: [],
-          parents: [],
-          siblings: [],
-        };
-      }
-
-      // Define reciprocal relations mapping
-      const reciprocalRelations: Record<string, string> = {
-        spouse: "spouses",
-        child: "parents",
-        parent: "children",
-        sibling: "siblings",
-      };
-
-      // Get the reciprocal relation type
-      const reciprocalRelation = reciprocalRelations[relation];
-
-      if (!reciprocalRelation) {
-        console.error("Invalid relation type:", relation);
-        return prev;
-      }
-
-      // Add the relation in both directions
-      if (!newRelations[member.id][relation]?.includes(relatedMember.id)) {
-        newRelations[member.id][relation] = [
-          ...(newRelations[member.id][relation] || []),
-          relatedMember.id
-        ];
-      }
-
-      // Add reciprocal relation
-      if (!newRelations[relatedMember.id][reciprocalRelation]?.includes(member.id)) {
-        newRelations[relatedMember.id][reciprocalRelation] = [
-          ...(newRelations[relatedMember.id][reciprocalRelation] || []),
-          member.id
-        ];
-      }
-
-      // Add the new member to the members array if not already present
-      const updatedMembers = prev.members.find(m => m.id === relatedMember.id)
-        ? prev.members
-        : [...prev.members, relatedMember];
-
-      return {
-        members: updatedMembers,
-        relations: newRelations,
-      };
-    });
-
+  const handleAddNewRelation = (member: FamilyMember, relation: string, relatedMember: FamilyMember) => {
+    handleAddRelation(member, relation, relatedMember);
     toast({
       title: "הצלחה",
       description: "הקשר המשפחתי נוסף בהצלחה",
     });
-  };
-
-  const getRelations = (memberId: string): FamilyRelations => {
-    const memberRelations = familyData.relations[memberId] || {
-      spouses: [],
-      children: [],
-      parents: [],
-      siblings: [],
-    };
-
-    return {
-      spouses: memberRelations.spouses.map((id) => 
-        familyData.members.find((m) => m.id === id)!
-      ),
-      children: memberRelations.children.map((id) =>
-        familyData.members.find((m) => m.id === id)!
-      ),
-      parents: memberRelations.parents.map((id) =>
-        familyData.members.find((m) => m.id === id)!
-      ),
-      siblings: memberRelations.siblings.map((id) =>
-        familyData.members.find((m) => m.id === id)!
-      ),
-    };
   };
 
   useEffect(() => {
@@ -163,26 +47,16 @@ export const FamilyTree = () => {
   return (
     <div className="min-h-screen bg-family-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="font-heading text-3xl md:text-4xl font-bold text-center mb-8 text-family-primary">
-          עץ המשפחה שלי
-        </h1>
+        <FamilyTreeHeader 
+          onAddMember={handleAddNewMember}
+          onSearch={handleSearch}
+        />
         
-        <div className="mb-6">
-          <AddFamilyMember onAdd={handleAddMember} />
-        </div>
-
-        <SearchBar onSearch={handleSearch} />
-
-        <div className="space-y-6 mt-6">
-          {searchResults.map((member) => (
-            <FamilyCard
-              key={member.id}
-              member={member}
-              relations={getRelations(member.id)}
-              onAddRelation={handleAddRelation}
-            />
-          ))}
-        </div>
+        <FamilyMembersList
+          members={searchResults}
+          getRelations={getRelations}
+          onAddRelation={handleAddNewRelation}
+        />
       </div>
     </div>
   );
