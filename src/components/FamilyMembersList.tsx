@@ -9,7 +9,7 @@ interface FamilyMembersListProps {
 
 export const FamilyMembersList = ({ members, getRelations, onAddRelation }: FamilyMembersListProps) => {
   return (
-    <div className="space-y-6 mt-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
       {members.map((member) => (
         <FamilyCard
           key={member.id}

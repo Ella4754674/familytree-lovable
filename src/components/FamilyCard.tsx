@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format, differenceInYears } from "date-fns";
-import { ChevronDown, ChevronUp, User } from "lucide-react";
+import { ChevronDown, ChevronUp, User, Heart, Users, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FamilyMember, FamilyRelations } from "@/types/family";
@@ -33,12 +33,48 @@ export const FamilyCard = ({ member, relations, expanded = false, onAddRelation 
     };
   };
 
+  const RelationshipSection = ({ title, icon: Icon, members, type }: {
+    title: string;
+    icon: any;
+    members: FamilyMember[];
+    type: "spouse" | "child" | "parent" | "sibling";
+  }) => (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 mb-2">
+        <Icon className="text-family-primary" size={20} />
+        <h4 className="text-sm font-semibold text-gray-600">{title}</h4>
+      </div>
+      <div className="grid grid-cols-1 gap-2">
+        {members.map((relative) => (
+          <div key={relative.id} className="flex items-center justify-between p-2 bg-family-background rounded-lg">
+            <div className="flex items-center gap-2">
+              <User size={16} className="text-family-secondary" />
+              <span className="text-sm">
+                {relative.firstName} {relative.lastName}
+              </span>
+            </div>
+            {relative.birthDate && (
+              <span className="text-xs text-gray-500">
+                גיל: {getAge(relative.birthDate)}
+              </span>
+            )}
+          </div>
+        ))}
+        <AddFamilyMember
+          existingMember={member}
+          relationship={type}
+          onAdd={handleAddRelation(type)}
+        />
+      </div>
+    </div>
+  );
+
   return (
-    <Card className={`w-full max-w-md mx-auto transition-all duration-200 ${isExpanded ? "animate-card-expand" : ""}`}>
+    <Card className={`w-full transition-all duration-200 ${isExpanded ? "animate-card-expand" : ""}`}>
       <CardHeader className="flex flex-row items-center justify-between p-4 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-        <div className="flex items-center space-x-3 space-x-reverse">
-          <div className="w-10 h-10 rounded-full bg-family-accent flex items-center justify-center">
-            <User className="text-family-primary" size={20} />
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-family-accent flex items-center justify-center">
+            <User className="text-family-primary" size={24} />
           </div>
           <div>
             <h3 className="font-heading text-lg font-semibold">
@@ -57,15 +93,51 @@ export const FamilyCard = ({ member, relations, expanded = false, onAddRelation 
       </CardHeader>
 
       {isExpanded && (
-        <CardContent className="p-4 pt-0">
-          <div className="space-y-4">
-            {member.birthDate && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-600">תאריך לידה</h4>
-                <p>{formatDate(member.birthDate)}</p>
-              </div>
-            )}
+        <CardContent className="p-4 pt-0 space-y-6">
+          {member.birthDate && (
+            <div className="p-3 bg-family-background rounded-lg">
+              <h4 className="text-sm font-semibold text-gray-600 mb-1">תאריך לידה</h4>
+              <p className="text-sm">{formatDate(member.birthDate)}</p>
+            </div>
+          )}
 
+          {relations.spouses.length > 0 && (
+            <RelationshipSection
+              title="בן/בת זוג"
+              icon={Heart}
+              members={relations.spouses}
+              type="spouse"
+            />
+          )}
+
+          {relations.children.length > 0 && (
+            <RelationshipSection
+              title="ילדים"
+              icon={ArrowDownCircle}
+              members={relations.children}
+              type="child"
+            />
+          )}
+
+          {relations.parents.length > 0 && (
+            <RelationshipSection
+              title="הורים"
+              icon={ArrowUpCircle}
+              members={relations.parents}
+              type="parent"
+            />
+          )}
+
+          {relations.siblings.length > 0 && (
+            <RelationshipSection
+              title="אחים/אחיות"
+              icon={Users}
+              members={relations.siblings}
+              type="sibling"
+            />
+          )}
+
+          {!isExpanded && (
             <div className="space-y-2">
               <AddFamilyMember
                 existingMember={member}
@@ -88,59 +160,7 @@ export const FamilyCard = ({ member, relations, expanded = false, onAddRelation 
                 onAdd={handleAddRelation("sibling")}
               />
             </div>
-
-            {relations.spouses.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-600">בני/בנות זוג</h4>
-                <ul className="mt-1 space-y-1">
-                  {relations.spouses.map((spouse) => (
-                    <li key={spouse.id} className="text-sm">
-                      {spouse.firstName} {spouse.lastName}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {relations.children.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-600">ילדים</h4>
-                <ul className="mt-1 space-y-1">
-                  {relations.children.map((child) => (
-                    <li key={child.id} className="text-sm">
-                      {child.firstName} {child.lastName}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {relations.parents.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-600">הורים</h4>
-                <ul className="mt-1 space-y-1">
-                  {relations.parents.map((parent) => (
-                    <li key={parent.id} className="text-sm">
-                      {parent.firstName} {parent.lastName}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {relations.siblings.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-600">אחים/אחיות</h4>
-                <ul className="mt-1 space-y-1">
-                  {relations.siblings.map((sibling) => (
-                    <li key={sibling.id} className="text-sm">
-                      {sibling.firstName} {sibling.lastName}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+          )}
         </CardContent>
       )}
     </Card>

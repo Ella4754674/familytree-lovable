@@ -56,22 +56,28 @@ export const AddFamilyMember = ({ onAdd, existingMember, relationship }: AddFami
     });
   };
 
+  const relationshipText = {
+    spouse: "בן/בת זוג",
+    child: "ילד/ה",
+    parent: "הורה",
+    sibling: "אח/ות",
+  }[relationship!] || "";
+
   const getDialogTitle = () => {
     if (!existingMember) return "הוספת בן משפחה חדש";
-    const relationshipText = {
-      spouse: "בן/בת זוג",
-      child: "ילד/ה",
-      parent: "הורה",
-      sibling: "אח/ות",
-    }[relationship!];
     return `הוספת ${relationshipText} ל${existingMember.firstName}`;
+  };
+
+  const getButtonText = () => {
+    if (!existingMember) return "הוסף בן משפחה חדש";
+    return `הוסף ${relationshipText}`;
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full">
-          {existingMember ? `הוסף ${relationship}` : "הוסף בן משפחה חדש"}
+          {getButtonText()}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
