@@ -64,6 +64,25 @@ export const FamilyTree = () => {
     setFamilyData((prev) => {
       const newRelations = { ...prev.relations };
       
+      // Initialize relations objects if they don't exist
+      if (!newRelations[member.id]) {
+        newRelations[member.id] = {
+          spouses: [],
+          children: [],
+          parents: [],
+          siblings: [],
+        };
+      }
+      
+      if (!newRelations[relatedMember.id]) {
+        newRelations[relatedMember.id] = {
+          spouses: [],
+          children: [],
+          parents: [],
+          siblings: [],
+        };
+      }
+
       // Add the relation in both directions
       if (!newRelations[member.id][relation].includes(relatedMember.id)) {
         newRelations[member.id][relation].push(relatedMember.id);
@@ -81,8 +100,13 @@ export const FamilyTree = () => {
         newRelations[relatedMember.id][reciprocalRelation].push(member.id);
       }
 
+      // Add the new member to the members array if not already present
+      const updatedMembers = prev.members.find(m => m.id === relatedMember.id)
+        ? prev.members
+        : [...prev.members, relatedMember];
+
       return {
-        members: [...prev.members, relatedMember],
+        members: updatedMembers,
         relations: newRelations,
       };
     });
