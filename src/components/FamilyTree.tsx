@@ -83,21 +83,36 @@ export const FamilyTree = () => {
         };
       }
 
-      // Add the relation in both directions
-      if (!newRelations[member.id][relation].includes(relatedMember.id)) {
-        newRelations[member.id][relation].push(relatedMember.id);
-      }
-
-      // Add reciprocal relation
-      const reciprocalRelation = {
+      // Define reciprocal relations mapping
+      const reciprocalRelations: Record<string, string> = {
         spouse: "spouses",
         child: "parents",
         parent: "children",
         sibling: "siblings",
-      }[relation];
+      };
 
-      if (!newRelations[relatedMember.id][reciprocalRelation].includes(member.id)) {
-        newRelations[relatedMember.id][reciprocalRelation].push(member.id);
+      // Get the reciprocal relation type
+      const reciprocalRelation = reciprocalRelations[relation];
+
+      if (!reciprocalRelation) {
+        console.error("Invalid relation type:", relation);
+        return prev;
+      }
+
+      // Add the relation in both directions
+      if (!newRelations[member.id][relation]?.includes(relatedMember.id)) {
+        newRelations[member.id][relation] = [
+          ...(newRelations[member.id][relation] || []),
+          relatedMember.id
+        ];
+      }
+
+      // Add reciprocal relation
+      if (!newRelations[relatedMember.id][reciprocalRelation]?.includes(member.id)) {
+        newRelations[relatedMember.id][reciprocalRelation] = [
+          ...(newRelations[relatedMember.id][reciprocalRelation] || []),
+          member.id
+        ];
       }
 
       // Add the new member to the members array if not already present
